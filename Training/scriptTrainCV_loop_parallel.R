@@ -150,6 +150,7 @@ for(selectedMethod in methods.used){
 
       png(filename = outputFile.image)
       plot(model)
+      abline(lm(model$obs ~ model$pred))
       dev.off()
 
       cat("Model plot image saved to: \"", outputFile.image, "\"","\n", sep = "")
@@ -176,6 +177,5 @@ stopCluster(cl)
 registerDoSEQ()
 
 proc.time() - ptm
-
 
 

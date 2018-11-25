@@ -76,6 +76,8 @@ cat("======================================================\n")
 cat("CREATING DIRECTORIES FOR OUTPUT DATA\n")
 cat("======================================================\n")
 
+#Creates directories
+
 #Parent directory
 if(dir.exists(parentPath)){
   message(paste0("Directory \"", parentPath, "\" already exists."))
@@ -84,7 +86,7 @@ if(dir.exists(parentPath)){
   dir.create(parentPath, showWarnings = FALSE)
   cat("Done.", "\n")
 }
-
+  
 #Child directories
 for(selectedMethod in methods.used){
   newDir <- paste0(parentPath, "/", selectedMethod)
@@ -137,6 +139,7 @@ for(selectedMethod in methods.used){
 
       png(filename = outputFile.image)
       plot(model)
+      abline(lm(model$obs ~ model$pred))
       dev.off()
 
       cat("Model plot image saved to: \"", outputFile.image, "\"","\n", sep = "")
@@ -160,4 +163,6 @@ for(selectedMethod in methods.used){
 cat("Finished with success.\n")
 
 print(proc.time() - ptm)
+
+
 
