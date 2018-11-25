@@ -1,16 +1,27 @@
 library(ggplot2)
 library(SnowballC)
 library(psych)
+library(doParallel)
 require(caret)
 require(RWeka)
 
 # Start measuring time
 ptm <- proc.time()
 
-#Suppress warnings in output
+# Suppress warnings in output
 options(warn=-1)
 
+# Calculate the number of cores
+ncores <-detectCores() - 1
+ 
+# Create and register cluster
+cl <- makeCluster(ncores)
+registerDoParallel(cl)
+
+# Provide reproducible results
 set.seed(1)
+
+# Input file
 datos<-read.csv("ESTIMACION\ CARGA\ FINAL_withData.csv", header=TRUE)
 
 elimina<-which((datos[,"Lote"]=="Millan")|(datos[,"Lote"]=="Rangoni")|(datos[,"Lote"]=="Rincon"))
@@ -24,9 +35,11 @@ est<-summary(datos)
 str_prediction <- "\n\n========= Prediction ========\n\n"
 str_separator.eq <- "======================================================\n"
 str_separator.ln <- "------------------------------------------------------\n"
+str_separator.hy <- "______________________________________________________\n"
 str_resultsObtention <- "RESULTS OBTENTION\n"
 str_fit <- "\n\n========= Fit ========\n\n"
 str_finalModel <- "\n\n========= Final Model ========\n\n"
+
 
 
 #Variables to use
@@ -48,9 +61,8 @@ variables <- list(basicas, basicasndvi, volumenes, volumenesndvi,numerosNSEW, nu
 variables_used <- c("basicas", "basicasndvi", "volumenes", "volumenesndvi", "numerosNSEW", "numerosNSEWndvi", "todo", "todondvi")
 
 #Select methods to train with
-#methods.used <- c("M5","knn","svmRadial","cubist","gbm","bayesglm", "rf")
 methods.used <- c("M5","knn","svmRadial","cubist","gbm", "rf")
-#methods.used <- c("rf")
+#methods.used <- c("M5","bayesglm")
 
 #Indicate whether plot graphs
 plotting.fit <- "Yes"
@@ -108,6 +120,7 @@ cat(str_separator.eq)
 for(selectedMethod in methods.used){
   index = 1
   cat("Selected method: ", selectedMethod, "\n")
+  cat(str_separator.hy)
   for(variable in variables){
     
     #Training, capturing output to maintain the console clean for methods such as gbm.
@@ -159,5 +172,10 @@ for(selectedMethod in methods.used){
 }
 cat("Finished with success.\n")
 
-print(proc.time() - ptm)
+stopCluster(cl)
+registerDoSEQ()
+
+proc.time() - ptm
+
+
 
