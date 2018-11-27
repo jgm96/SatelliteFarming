@@ -22,14 +22,14 @@ registerDoParallel(cl)
 set.seed(1)
 
 # Input file
-datos<-read.csv("ESTIMACION\ CARGA\ FINAL_withData.csv", header=TRUE)
+data<-read.csv("ESTIMACION\ CARGA\ FINAL_withData.csv", header=TRUE)
 
-elimina<-which((datos[,"Lote"]=="Millan")|(datos[,"Lote"]=="Rangoni")|(datos[,"Lote"]=="Rincon"))
-datos<-datos[-elimina,]
-datos<-datos[-c(1843,1844),]
-datos$Suelo[datos$Suelo=="Arenoso "]<-"Arenoso" 
-datos$Suelo<-factor(datos$Suelo)
-est<-summary(datos)
+remove<-which((data[,"Lote"]=="Millan")|(data[,"Lote"]=="Rangoni")|(data[,"Lote"]=="Rincon"))
+data<-data[-remove,]
+data<-data[-c(1843,1844),]
+data$Suelo[data$Suelo=="Arenoso "]<-"Arenoso" 
+data$Suelo<-factor(data$Suelo)
+est<-summary(data)
 
 #String variables for outputs
 str_prediction <- "\n\n========= Prediction ========\n\n"
@@ -43,22 +43,22 @@ str_finalModel <- "\n\n========= Final Model ========\n\n"
 
 
 #Variables to use
-basicas<-c(8,12,16:18,23,56)
-basicasndvi<-c(8,12,16:18,23,56,65,66)
-volumenes<-c(8,12,16,17,18,23,57:62,56)
-volumenesndvi<-c(8,12,16,17,18,23,57:62,56,65,66)
-numerosNSEW<-c(8,12,16:18,23,42:45,56)
-numerosNSEWndvi<-c(8,12,16:18,23,42:45,56,65,66)
-todo<-c(4,5,6,8,12,16:18,23,57:62,42:46,56)
-todondvi<-c(4,5,6,8,12,16:18,23,57:62,42:46,56,65,66)
+basics<-c(8,12,16:18,23,56)
+basicsndvi<-c(8,12,16:18,23,56,65,66)
+volumes<-c(8,12,16,17,18,23,57:62,56)
+volumesndvi<-c(8,12,16,17,18,23,57:62,56,65,66)
+numbersNSEW<-c(8,12,16:18,23,42:45,56)
+numbersNSEWndvi<-c(8,12,16:18,23,42:45,56,65,66)
+all<-c(4,5,6,8,12,16:18,23,57:62,42:46,56)
+allndvi<-c(4,5,6,8,12,16:18,23,57:62,42:46,56,65,66)
 
 ######################## CONFIGURATION #####################################
 
 #Select variables to train with
-variables <- list(basicas, basicasndvi, volumenes, volumenesndvi,numerosNSEW, numerosNSEWndvi, todo, todondvi)
+variables <- list(basics, basicsndvi, volumes, volumesndvi, numbersNSEW, numbersNSEWndvi, all, allndvi)
 
 #Enter variable names to export results
-variables_used <- c("basicas", "basicasndvi", "volumenes", "volumenesndvi", "numerosNSEW", "numerosNSEWndvi", "todo", "todondvi")
+variables_used <- c("basics", "basicsndvi", "volumes", "volumesndvi", "numbersNSEW", "numbersNSEWndvi", "all", "allndvi")
 
 #Select methods to train with
 methods.used <- c("M5","knn","svmRadial","cubist","gbm", "rf")
@@ -69,7 +69,7 @@ plotting.fit <- "Yes"
 plotting.model <- "Yes"
 
 #Remove NA values
-prediction <- na.omit(datos)
+prediction <- na.omit(data)
 
 #Splitting data using Caret Training (75%) and test (25%).
 trainIndex <- createDataPartition(prediction$Cosecha, p=.75, list = FALSE, times = 1)
