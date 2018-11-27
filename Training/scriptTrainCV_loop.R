@@ -3,6 +3,7 @@ library(SnowballC)
 library(psych)
 require(caret)
 require(RWeka)
+library(dplyr)
 
 # Start measuring time
 ptm <- proc.time()
@@ -42,15 +43,14 @@ allndvi<-c(4,5,6,8,12,16:18,23,57:62,42:46,56,65,66)
 ######################## CONFIGURATION #####################################
 
 #Select variables to train with
-variables <- list(basics, basicsndvi, volumes, volumesndvi, numbersNSEW, numbersNSEWndvi, all, allndvi)
+variables <- lst(basics, basicsndvi, volumes, volumesndvi, numbersNSEW, numbersNSEWndvi, all, allndvi)
 
 #Enter variable names to export results
-variables_used <- c("basicas", "basicasndvi", "volumenes", "volumenesndvi", "numerosNSEW", "numerosNSEWndvi", "todo", "todondvi")
+variables_used <- names(variables)
 
 #Select methods to train with
 #methods.used <- c("M5","knn","svmRadial","cubist","gbm","bayesglm", "rf")
 methods.used <- c("M5","knn","svmRadial","cubist","gbm", "rf")
-#methods.used <- c("rf")
 
 #Indicate whether plot graphs
 plotting.fit <- "Yes"

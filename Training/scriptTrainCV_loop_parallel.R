@@ -58,7 +58,7 @@ allndvi<-c(4,5,6,8,12,16:18,23,57:62,42:46,56,65,66)
 variables <- list(basics, basicsndvi, volumes, volumesndvi, numbersNSEW, numbersNSEWndvi, all, allndvi)
 
 #Enter variable names to export results
-variables_used <- c("basics", "basicsndvi", "volumes", "volumesndvi", "numbersNSEW", "numbersNSEWndvi", "all", "allndvi")
+variables_used <- names(variables)
 
 #Select methods to train with
 methods.used <- c("M5","knn","svmRadial","cubist","gbm", "rf")
