@@ -25,6 +25,7 @@ est<-summary(data)
 str_prediction <- "\n\n========= Prediction ========\n\n"
 str_separator.eq <- "======================================================\n"
 str_separator.ln <- "------------------------------------------------------\n"
+str_separator.hy <- "______________________________________________________\n"
 str_resultsObtention <- "RESULTS OBTENTION\n"
 str_fit <- "\n\n========= Fit ========\n\n"
 str_finalModel <- "\n\n========= Final Model ========\n\n"
@@ -111,23 +112,20 @@ for(selectedMethod in methods.used){
 ############### RESULTS OBTENTION ################
 
 cat(str_separator.eq)
-cat(str_resultsObtention)
+cat("TRAINING PROCESS\n")
 cat(str_separator.eq)
 
-#We initialize the list for results
-results <- vector(mode = "list", length = length(methods.used))
-names(results) <- methods.used
+#We initialize the data frame for results
+results <- as.data.frame(matrix(0, ncol = length(methods.used), nrow = length(variables)), row.names = variables_used)
+colnames(results) <- methods.used
 
 #We iterate through the different methods to obtain 
-index = 1
+methodIndex = 1
 for(selectedMethod in methods.used){
   varIndex = 1
   
-  #Initialize results vector.
-  result <- vector(mode = "list", length = length(variables))
-  names(result) <- variables_used
-  
   cat("Selected method: ", selectedMethod, "\n")
+  cat(str_separator.hy)
   for(variable in variables){
     
     #Training, capturing output to maintain the console clean for methods such as gbm.
@@ -141,7 +139,7 @@ for(selectedMethod in methods.used){
     model <- data.frame(obs = prediction.test[variable]$Cosecha, pred = prediction)
     
     #Store results in results vector.
-    result[varIndex] <- defaultSummary(model)[[metric]]
+    results[[methodIndex]][[varIndex]] <- defaultSummary(model)[[metric]]
     
     #Plotting fit if required
     if(plotting.fit == "Yes"){
@@ -182,19 +180,21 @@ for(selectedMethod in methods.used){
     cat(str_separator.ln)
   
   }
-  results[[index]] <- result
-  index <- index +1
+  methodIndex <- methodIndex +1
   
 }
 
+cat(str_separator.eq)
+cat(str_resultsObtention)
+cat(str_separator.eq)
+
 #Obtain best method and best variable.
-results_df <- as.data.frame(results)
+minValue <- min(results)
+bestMethod <- names(results)[which(results == minValue, arr.ind = T)[,"row"]]
+cat(str_separator.ln)
+cat("Best method: ", bestMethod, " with a ", metric, " value of ", minValue, ".\n")
+cat("Finished with success in ", (proc.time() - ptm)["elapsed"], "s.\n")
 
-
-
-cat("Finished with success.\n")
-
-print(proc.time() - ptm)
 
 
 
