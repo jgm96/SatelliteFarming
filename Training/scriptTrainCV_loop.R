@@ -12,7 +12,7 @@ ptm <- proc.time()
 options(warn=-1)
 
 set.seed(1)
-datos<-read.csv("ESTIMACION\ CARGA\ FINAL_withData.csv", header=TRUE)
+data<-read.csv("ESTIMACION\ CARGA\ FINAL_withData.csv", header=TRUE)
 
 remove<-which((data[,"Lote"]=="Millan")|(data[,"Lote"]=="Rangoni")|(data[,"Lote"]=="Rincon"))
 data<-data[-remove,]
@@ -49,15 +49,23 @@ variables <- lst(basics, basicsndvi, volumes, volumesndvi, numbersNSEW, numbersN
 variables_used <- names(variables)
 
 #Select methods to train with
-#methods.used <- c("M5","knn","svmRadial","cubist","gbm","bayesglm", "rf")
-methods.used <- c("M5","knn","svmRadial","cubist","gbm", "rf")
+methods.used <- c("M5","knn","svmRadial","gbm","bayesglm", "rf")
+#methods.used <- c("M5", "cubist")
 
 #Indicate whether plot graphs
-plotting.fit <- "Yes"
-plotting.model <- "Yes"
+plotting.fit <- "No"
+plotting.model <- "No"
+
+#Indicate whether is necessary to export to txt
+export_txt <- "Yes"
+
+#Indicate which measurement is the prefered
+metric <- "RMSE"
+
+#############################################################################
 
 #Remove NA values
-prediction <- na.omit(datos)
+prediction <- na.omit(data)
 
 #Splitting data using Caret Training (75%) and test (25%).
 trainIndex <- createDataPartition(prediction$Cosecha, p=.75, list = FALSE, times = 1)
@@ -106,9 +114,19 @@ cat(str_separator.eq)
 cat(str_resultsObtention)
 cat(str_separator.eq)
 
+#We initialize the list for results
+results <- vector(mode = "list", length = length(methods.used))
+names(results) <- methods.used
 
+#We iterate through the different methods to obtain 
+index = 1
 for(selectedMethod in methods.used){
-  index = 1
+  varIndex = 1
+  
+  #Initialize results vector.
+  result <- vector(mode = "list", length = length(variables))
+  names(result) <- variables_used
+  
   cat("Selected method: ", selectedMethod, "\n")
   for(variable in variables){
     
@@ -122,9 +140,12 @@ for(selectedMethod in methods.used){
     #Model build
     model <- data.frame(obs = prediction.test[variable]$Cosecha, pred = prediction)
     
+    #Store results in results vector.
+    result[varIndex] <- defaultSummary(model)[[metric]]
+    
     #Plotting fit if required
     if(plotting.fit == "Yes"){
-      outputFile.image <- paste0(parentPath, "/", selectedMethod, "/", variables_used[index], "_fit", ".png")
+      outputFile.image <- paste0(parentPath, "/", selectedMethod, "/", variables_used[varIndex], "_fit", ".png")
      
       png(filename = outputFile.image)
       capture.output(print(plot(fit)))
@@ -135,7 +156,7 @@ for(selectedMethod in methods.used){
     
     #Plotting model if required
     if(plotting.model == "Yes"){
-      outputFile.image <- paste0(parentPath, "/", selectedMethod, "/", variables_used[index], "_model", ".png")
+      outputFile.image <- paste0(parentPath, "/", selectedMethod, "/", variables_used[varIndex], "_model", ".png")
 
       png(filename = outputFile.image)
       plot(model)
@@ -145,21 +166,32 @@ for(selectedMethod in methods.used){
       cat("Model plot image saved to: \"", outputFile.image, "\"","\n", sep = "")
     }
     
-    #Build path to save results.
-    outputFile.text <- paste0(parentPath, "/", selectedMethod, "/", variables_used[index],".txt")
-    
-    #Capture output results.
-    out <- capture.output( cat(str_prediction), defaultSummary(model), cat(str_fit), fit, summary(fit), cat(str_finalModel), fit$finalModel)
-    
-    #Store results in a file.
-    write(out, file = outputFile.text, sep = " ")
-    
-    cat("Results saved to: \"", outputFile.text, "\"","\n", sep = "")
-    index <- index +1
-    
+    if(export_txt == "Yes"){
+      #Build path to save results.
+      outputFile.text <- paste0(parentPath, "/", selectedMethod, "/", variables_used[varIndex],".txt")
+      
+      #Capture output results.
+      out <- capture.output( cat(str_prediction), defaultSummary(model), cat(str_fit), fit, summary(fit), cat(str_finalModel), fit$finalModel)
+      
+      #Store results in a file.
+      write(out, file = outputFile.text, sep = " ")
+      
+      cat("Results saved to: \"", outputFile.text, "\"","\n", sep = "")
+    }
+    varIndex <- varIndex + 1
     cat(str_separator.ln)
+  
   }
+  results[[index]] <- result
+  index <- index +1
+  
 }
+
+#Obtain best method and best variable.
+results_df <- as.data.frame(results)
+
+
+
 cat("Finished with success.\n")
 
 print(proc.time() - ptm)
