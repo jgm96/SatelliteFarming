@@ -50,8 +50,9 @@ variables <- lst(basics, basicsndvi, volumes, volumesndvi, numbersNSEW, numbersN
 variables_used <- names(variables)
 
 #Select methods to train with
-methods.used <- c("M5","knn","svmRadial","gbm","bayesglm", "rf")
-#methods.used <- c("M5", "cubist")
+methods.used <- c("M5")
+#,"knn","svmRadial","gbm","bayesglm", "rf")
+#methods.used <- c("cubist")
 
 #Indicate whether plot graphs
 plotting.fit <- "No"
@@ -65,14 +66,11 @@ metric <- "RMSE"
 
 #############################################################################
 
-#Remove NA values
-prediction <- na.omit(data)
-
 #Splitting data using Caret Training (75%) and test (25%).
-trainIndex <- createDataPartition(prediction$Cosecha, p=.75, list = FALSE, times = 1)
+trainIndex <- createDataPartition(data$Cosecha, p=.75, list = FALSE, times = 1)
 
-prediction.train <- prediction[-trainIndex, ]
-prediction.test <- prediction[trainIndex, ]
+data.test <- data[-trainIndex, ]
+data.train <- data[trainIndex, ]
 
 #Configure train control (10-fold CrossValidation)
 train_control <- trainControl(method="cv", number = 10)
@@ -85,8 +83,6 @@ cat("======================================================\n")
 cat("CREATING DIRECTORIES FOR OUTPUT DATA\n")
 cat("======================================================\n")
 
-#Creates directories
-
 #Parent directory
 if(dir.exists(parentPath)){
   message(paste0("Directory \"", parentPath, "\" already exists."))
@@ -95,7 +91,7 @@ if(dir.exists(parentPath)){
   dir.create(parentPath, showWarnings = FALSE)
   cat("Done.", "\n")
 }
-  
+
 #Child directories
 for(selectedMethod in methods.used){
   newDir <- paste0(parentPath, "/", selectedMethod)
@@ -108,6 +104,8 @@ for(selectedMethod in methods.used){
     cat("Done.", "\n")
   }
 }
+
+source(file = 'createDirectories.R', chdir = T)
 
 ############### RESULTS OBTENTION ################
 
@@ -129,14 +127,14 @@ for(selectedMethod in methods.used){
   for(variable in variables){
     
     #Training, capturing output to maintain the console clean for methods such as gbm.
-    garbage <- capture.output(fit <- train(Cosecha ~., data=prediction.train[variable], method=selectedMethod,
+    garbage <- capture.output(fit <- train(Cosecha ~., data=na.omit(data.train[variable]), method=selectedMethod,
                                  trControl = train_control))
     
     #Predict using fit and the selected variable
-    prediction <- predict(fit,prediction.test[variable])
+    prediction <- predict(fit,na.omit(data.test[variable]))
     
     #Model build
-    model <- data.frame(obs = prediction.test[variable]$Cosecha, pred = prediction)
+    model <- data.frame(obs = na.omit(data.test[variable])$Cosecha, pred = prediction)
     
     #Store results in results vector.
     results[[methodIndex]][[varIndex]] <- defaultSummary(model)[[metric]]
@@ -193,6 +191,10 @@ minValue <- min(results)
 bestMethod <- names(results)[which(results == minValue, arr.ind = T)[,"row"]]
 cat(str_separator.ln)
 cat("Best method: ", bestMethod, " with a ", metric, " value of ", minValue, ".\n")
+
+#Export results to .csv
+lapply(results, function(x) write.table(results, 'test.csv', append= T, sep=','))
+
 cat("Finished with success in ", (proc.time() - ptm)["elapsed"], "s.\n")
 
 
