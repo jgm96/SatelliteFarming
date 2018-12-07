@@ -14,11 +14,11 @@ options(warn=-1)
 set.seed(1)
 data<-read.csv("ESTIMACION\ CARGA\ FINAL_withData.csv", header=TRUE)
 
-remove<-which((data[,"Lote"]=="Millan")|(data[,"Lote"]=="Rangoni")|(data[,"Lote"]=="Rincon"))
+remove<-which((data[,"Batch"]=="Millan")|(data[,"Batch"]=="Rangoni")|(data[,"Batch"]=="Rincon"))
 data<-data[-remove,]
 data<-data[-c(1843,1844),]
-data$Suelo[data$Suelo=="Arenoso "]<-"Arenoso" 
-data$Suelo<-factor(data$Suelo)
+data$Soil[data$Soil=="Arenoso "]<-"Arenoso" 
+data$Soil<-factor(data$Soil)
 est<-summary(data)
 
 #String variables for outputs
@@ -50,8 +50,7 @@ variables <- lst(basics, basicsndvi, volumes, volumesndvi, numbersNSEW, numbersN
 variables_used <- names(variables)
 
 #Select methods to train with
-methods.used <- c("M5")
-#,"knn","svmRadial","gbm","bayesglm", "rf")
+methods.used <- c("M5","knn","svmRadial","gbm","bayesglm", "rf")
 #methods.used <- c("cubist")
 
 #Indicate whether plot graphs
@@ -67,7 +66,7 @@ metric <- "RMSE"
 #############################################################################
 
 #Splitting data using Caret Training (75%) and test (25%).
-trainIndex <- createDataPartition(data$Cosecha, p=.75, list = FALSE, times = 1)
+trainIndex <- createDataPartition(data$Crop, p=.75, list = FALSE, times = 1)
 
 data.test <- data[-trainIndex, ]
 data.train <- data[trainIndex, ]
@@ -105,8 +104,6 @@ for(selectedMethod in methods.used){
   }
 }
 
-source(file = 'createDirectories.R', chdir = T)
-
 ############### RESULTS OBTENTION ################
 
 cat(str_separator.eq)
@@ -127,14 +124,21 @@ for(selectedMethod in methods.used){
   for(variable in variables){
     
     #Training, capturing output to maintain the console clean for methods such as gbm.
-    garbage <- capture.output(fit <- train(Cosecha ~., data=na.omit(data.train[variable]), method=selectedMethod,
-                                 trControl = train_control))
+    if(selectedMethod == "M5"){
+      garbage <- capture.output(fit <- train(Crop ~., data=na.omit(data.train[variable]), method=selectedMethod,
+                                             trControl = train_control,
+                                             tuneGrid = expand.grid(pruned = "Yes", smoothed = c("Yes"), rules = c("Yes","No"))))  
+    }
+    else{
+      garbage <- capture.output(fit <- train(Crop ~., data=na.omit(data.train[variable]), method=selectedMethod,
+                                             trControl = train_control))  
+    }
     
     #Predict using fit and the selected variable
     prediction <- predict(fit,na.omit(data.test[variable]))
     
     #Model build
-    model <- data.frame(obs = na.omit(data.test[variable])$Cosecha, pred = prediction)
+    model <- data.frame(obs = na.omit(data.test[variable])$Crop, pred = prediction)
     
     #Store results in results vector.
     results[[methodIndex]][[varIndex]] <- defaultSummary(model)[[metric]]

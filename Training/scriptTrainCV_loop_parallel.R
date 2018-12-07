@@ -4,6 +4,7 @@ library(psych)
 library(doParallel)
 require(caret)
 require(RWeka)
+library(dplyr)
 
 # Start measuring time
 ptm <- proc.time()
@@ -57,8 +58,8 @@ variables <- lst(basics, basicsndvi, volumes, volumesndvi, numbersNSEW, numbersN
 variables_used <- names(variables)
 
 #Select methods to train with
-methods.used <- c("M5","knn","svmRadial","gbm","bayesglm", "rf")
-#methods.used <- c("cubist")
+methods.used <- c("knn","svmRadial","gbm","bayesglm", "rf")
+#methods.used <- c("M5")
 
 #Indicate whether plot graphs
 plotting.fit <- "No"
@@ -89,9 +90,33 @@ cat("======================================================\n")
 cat("CREATING DIRECTORIES FOR OUTPUT DATA\n")
 cat("======================================================\n")
 
-#Creates directories
+#We create the directories to store results only if they do not exist.
 
-source("createDirectories.R")
+cat("======================================================\n")
+cat("CREATING DIRECTORIES FOR OUTPUT DATA\n")
+cat("======================================================\n")
+
+#Parent directory
+if(dir.exists(parentPath)){
+  message(paste0("Directory \"", parentPath, "\" already exists."))
+} else {
+  cat("Creating directory \"", parentPath, "\" ...", "\n", sep = "")
+  dir.create(parentPath, showWarnings = FALSE)
+  cat("Done.", "\n")
+}
+
+#Child directories
+for(selectedMethod in methods.used){
+  newDir <- paste0(parentPath, "/", selectedMethod)
+  if(dir.exists(newDir)){
+    message(paste0("Directory \"", newDir, "\" already exists."))  
+  }
+  else{
+    cat("Creating directory \"", newDir, "\" ...", "\n", sep = "")
+    dir.create(newDir, showWarnings = FALSE)
+    cat("Done.", "\n")
+  }
+}
 
 ############### RESULTS OBTENTION ################
 
@@ -113,14 +138,21 @@ for(selectedMethod in methods.used){
   for(variable in variables){
     
     #Training, capturing output to maintain the console clean for methods such as gbm.
-    garbage <- capture.output(fit <- train(Cosecha ~., data=data.train[variable], method=selectedMethod,
-                                           trControl = train_control))
+    if(selectedMethod == "M5"){
+      garbage <- capture.output(fit <- train(Crop ~., data=na.omit(data.train[variable]), method=selectedMethod,
+                                             trControl = train_control,
+                                             tuneGrid = expand.grid(pruned = "Yes", smoothed = c("Yes"), rules = c("Yes","No"))))  
+    }
+    else{
+      garbage <- capture.output(fit <- train(Crop ~., data=na.omit(data.train[variable]), method=selectedMethod,
+                                             trControl = train_control))  
+    }
     
     #Predict using fit and the selected variable
-    prediction <- predict(fit,data.test[variable])
+    prediction <- predict(fit,na.omit(data.test[variable]))
     
     #Model build
-    model <- data.frame(obs = data.test[variable]$Cosecha, pred = prediction)
+    model <- data.frame(obs = na.omit(data.test[variable])$Cosecha, pred = prediction)
     
     #Store results in results vector.
     results[[methodIndex]][[varIndex]] <- defaultSummary(model)[[metric]]
@@ -177,6 +209,9 @@ minValue <- min(results)
 bestMethod <- names(results)[which(results == minValue, arr.ind = T)[,"row"]]
 cat(str_separator.ln)
 cat("Best method: ", bestMethod, " with a ", metric, " value of ", minValue, ".\n")
+
+#Export results to .csv
+lapply(results, function(x) write.table(results, 'test.csv', append= T, sep=','))
 
 stopCluster(cl)
 registerDoSEQ()
