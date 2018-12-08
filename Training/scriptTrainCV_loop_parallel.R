@@ -162,10 +162,13 @@ for(selectedMethod in methods.used){
       outputFile.image <- paste0(parentPath, "/", selectedMethod, "/", variables_used[varIndex], "_fit", ".png")
       
       png(filename = outputFile.image)
-      capture.output(print(plot(fit)))
+      tryCatch({
+        capture.output(print(plot(fit)))
+        cat("Fit plot image saved to: \"", outputFile.image, "\"","\n", sep = "")
+      }, error = function(err){
+        message(paste("ERROR: ", err))
+      })
       dev.off()
-      
-      cat("Fit plot image saved to: \"", outputFile.image, "\"","\n", sep = "")
     }
     
     #Plotting model if required
@@ -180,18 +183,20 @@ for(selectedMethod in methods.used){
       cat("Model plot image saved to: \"", outputFile.image, "\"","\n", sep = "")
     }
     
-    if(export_txt == "Yes"){
-      #Build path to save results.
-      outputFile.text <- paste0(parentPath, "/", selectedMethod, "/", variables_used[varIndex],".txt")
+    #Plotting varImp if required
+    if(plotting.varImp == "Yes"){
+      outputFile.image <- paste0(parentPath, "/", selectedMethod, "/", variables_used[varIndex], "_varImp", ".png")
       
-      #Capture output results.
-      out <- capture.output( cat(str_prediction), defaultSummary(model), cat(str_fit), fit, summary(fit), cat(str_finalModel), fit$finalModel)
-      
-      #Store results in a file.
-      write(out, file = outputFile.text, sep = " ")
-      
-      cat("Results saved to: \"", outputFile.text, "\"","\n", sep = "")
+      png(filename = outputFile.image)
+      tryCatch({
+        capture.output(print(plot(varImp(fit))))
+        cat("VarImp plot image saved to: \"", outputFile.image, "\"","\n", sep = "")
+      }, error = function(err){
+        message(paste("ERROR: ", err))
+      })
+      dev.off()
     }
+    
     varIndex <- varIndex + 1
     cat(str_separator.ln)
     
@@ -211,7 +216,9 @@ cat(str_separator.ln)
 cat("Best method: ", bestMethod, " with a ", metric, " value of ", minValue, ".\n")
 
 #Export results to .csv
-lapply(results, function(x) write.table(results, 'test.csv', append= T, sep=','))
+outputFile.csv = paste0(parentPath, "/results_", metric, ".csv") 
+out <- capture.output(lapply(results, function(x) write.csv(results, outputFile.csv, append= T, sep=',')))
+cat(metric, "results saved to ", outputFile.csv) 
 
 stopCluster(cl)
 registerDoSEQ()

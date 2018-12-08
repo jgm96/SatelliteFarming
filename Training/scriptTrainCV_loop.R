@@ -50,12 +50,12 @@ variables <- lst(basics, basicsndvi, volumes, volumesndvi, numbersNSEW, numbersN
 variables_used <- names(variables)
 
 #Select methods to train with
-methods.used <- c("M5","knn","svmRadial","gbm","bayesglm", "rf")
-#methods.used <- c("cubist")
+methods.used <- c("bayesglm", "M5","knn","svmRadial","gbm", "cubist")
 
 #Indicate whether plot graphs
-plotting.fit <- "No"
-plotting.model <- "No"
+plotting.fit <- "Yes"
+plotting.model <- "Yes"
+plotting.varImp <- "Yes"
 
 #Indicate whether is necessary to export to txt
 export_txt <- "Yes"
@@ -148,10 +148,13 @@ for(selectedMethod in methods.used){
       outputFile.image <- paste0(parentPath, "/", selectedMethod, "/", variables_used[varIndex], "_fit", ".png")
      
       png(filename = outputFile.image)
-      capture.output(print(plot(fit)))
+      tryCatch({
+        capture.output(print(plot(fit)))
+        cat("Fit plot image saved to: \"", outputFile.image, "\"","\n", sep = "")
+        }, error = function(err){
+          message(paste("ERROR: ", err))
+        })
       dev.off()
-      
-      cat("Fit plot image saved to: \"", outputFile.image, "\"","\n", sep = "")
     }
     
     #Plotting model if required
@@ -164,6 +167,20 @@ for(selectedMethod in methods.used){
       dev.off()
 
       cat("Model plot image saved to: \"", outputFile.image, "\"","\n", sep = "")
+    }
+    
+    #Plotting varImp if required
+    if(plotting.varImp == "Yes"){
+      outputFile.image <- paste0(parentPath, "/", selectedMethod, "/", variables_used[varIndex], "_varImp", ".png")
+      
+      png(filename = outputFile.image)
+      tryCatch({
+        capture.output(print(plot(varImp(fit))))
+        cat("VarImp plot image saved to: \"", outputFile.image, "\"","\n", sep = "")
+      }, error = function(err){
+        message(paste("ERROR: ", err))
+      })
+      dev.off()
     }
     
     if(export_txt == "Yes"){
@@ -197,7 +214,9 @@ cat(str_separator.ln)
 cat("Best method: ", bestMethod, " with a ", metric, " value of ", minValue, ".\n")
 
 #Export results to .csv
-lapply(results, function(x) write.table(results, 'test.csv', append= T, sep=','))
+outputFile.csv = paste0(parentPath, "/results_", metric, ".csv") 
+out <- capture.output(lapply(results, function(x) write.csv(results, outputFile.csv, append= T, sep=',')))
+cat(metric, "results saved to ", outputFile.csv) 
 
 cat("Finished with success in ", (proc.time() - ptm)["elapsed"], "s.\n")
 
