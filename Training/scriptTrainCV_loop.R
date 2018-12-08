@@ -57,7 +57,7 @@ plotting.fit <- "Yes"
 plotting.model <- "Yes"
 plotting.varImp <- "Yes"
 
-#Indicate whether is necessary to export to txt
+#Indicate whether is necessary to export to .txt
 export_txt <- "Yes"
 
 #Indicate which measurement is the prefered
@@ -209,7 +209,7 @@ cat(str_separator.eq)
 
 #Obtain best method and best variable.
 minValue <- min(results)
-bestMethod <- names(results)[which(results == minValue, arr.ind = T)[,"row"]]
+bestMethod <- names(results)[which.min(apply(results, MARGIN = 2, min))]
 cat(str_separator.ln)
 cat("Best method: ", bestMethod, " with a ", metric, " value of ", minValue, ".\n")
 
